@@ -23,7 +23,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 
 
-pkg_dis_tutorial3 = get_package_share_directory('RINS-task-1')
+pkg_dis_tutorial3 = get_package_share_directory('RINS-task-real-robot')
 
 
 ARGUMENTS = [
@@ -48,7 +48,7 @@ for pose_element in ['x', 'y', 'z', 'yaw']:
 
 def generate_launch_description():
     # Directories
-    package_dir = get_package_share_directory('RINS-task-1')
+    package_dir = get_package_share_directory('RINS-task-real-robot')
 
     # Paths
     ignition_launch = PathJoinSubstitution(

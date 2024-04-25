@@ -40,7 +40,7 @@ ARGUMENTS = [
 
 
 def generate_launch_description():
-    pkg_dis_tutorial3 = get_package_share_directory('RINS-task-1')
+    pkg_dis_tutorial3 = get_package_share_directory('RINS-task-real-robot')
 
     namespace = LaunchConfiguration('namespace')
     sync = LaunchConfiguration('sync')

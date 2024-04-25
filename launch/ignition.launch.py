@@ -44,7 +44,7 @@ def generate_launch_description():
 
     # Directories
     pkg_dis_tutorial3 = get_package_share_directory(
-        'RINS-task-1')
+        'RINS-task-real-robot')
     pkg_turtlebot4_ignition_bringup = get_package_share_directory(
         'turtlebot4_ignition_bringup')
     pkg_turtlebot4_ignition_gui_plugins = get_package_share_directory(

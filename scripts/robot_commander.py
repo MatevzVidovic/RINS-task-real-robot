@@ -56,6 +56,8 @@ from playsound import playsound
 from pydub import AudioSegment
 from pydub.playback import play
 
+import os
+
 
 
 
@@ -560,7 +562,17 @@ class RobotCommander(Node):
                 self.navigation_list.insert(0, ("say_hi", None, None))
 
     def say_hi(self):
-        playsound("src/RINS-task-1/voice/zivjo.mp3")
+        wav_file = os.path.expanduser("~/colcon_ws/src/RINS-task-real-robot/voice/zivjo.wav")
+        
+        
+        # playsound(wav_file)
+
+        # print(os.getcwd())
+        # # audio = AudioSegment.from_file("./src/RINS-task-real-robot/voice/zivjo.mp3")
+        
+        audio = AudioSegment.from_file(file=wav_file, format="wav")
+        play(audio)
+
         self.faces_greeted += 1
 
 

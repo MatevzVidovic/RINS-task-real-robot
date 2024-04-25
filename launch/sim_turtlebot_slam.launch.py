@@ -45,7 +45,7 @@ for pose_element in ['x', 'y', 'z', 'yaw']:
 
 def generate_launch_description():
     # Directories
-    package_dir = get_package_share_directory('RINS-task-1')
+    package_dir = get_package_share_directory('RINS-task-real-robot')
 
     # Paths
     ignition_launch = PathJoinSubstitution(
