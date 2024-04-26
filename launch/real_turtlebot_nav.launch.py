@@ -23,25 +23,22 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 
 
+from launch_ros.actions import Node, PushRosNamespace
+
 pkg_dis_tutorial3 = get_package_share_directory('RINS-task-real-robot')
 
 
 ARGUMENTS = [
-    DeclareLaunchArgument('namespace', default_value='',
-                          description='Robot namespace'),
+    DeclareLaunchArgument('rviz', default_value='false',
+                          choices=['true', 'false'],
+                          description='Start rviz.'),
     DeclareLaunchArgument('rviz', default_value='true',
                           choices=['true', 'false'], description='Start rviz.'),
-    DeclareLaunchArgument('model', default_value='standard',
-                          choices=['standard', 'lite'],
-                          description='Turtlebot4 Model'),
+
     DeclareLaunchArgument('map', default_value=PathJoinSubstitution(
                           [pkg_dis_tutorial3, 'maps', 'poligon.yaml']),
                           description='Full path to map yaml file to load'),
 ]
-
-for pose_element in ['x', 'y', 'z', 'yaw']:
-    ARGUMENTS.append(DeclareLaunchArgument(pose_element, default_value='0.0',
-                     description=f'{pose_element} component of the robot pose.'))
 
 
 def generate_launch_description():
@@ -51,35 +48,24 @@ def generate_launch_description():
     # Paths
     robot_spawn_launch = PathJoinSubstitution(
         [package_dir, 'launch', 'real_turtlebot4_spawn.launch.py'])
+    pkg_turtlebot4_viz = get_package_share_directory(
+        'turtlebot4_viz')
+    rviz_launch = PathJoinSubstitution(
+        [pkg_turtlebot4_viz, 'launch', 'view_robot.launch.py'])
     localization_launch = PathJoinSubstitution(
         [pkg_dis_tutorial3, 'launch', 'localization.launch.py'])
     nav2_launch = PathJoinSubstitution(
         [pkg_dis_tutorial3, 'launch', 'nav2.launch.py'])
 
     # Launch configurations
-    namespace = LaunchConfiguration('namespace')
     map_file = LaunchConfiguration('map')
-    # use_sim_time = LaunchConfiguration('use_sim_time')
-    x, y, z = LaunchConfiguration('x'), LaunchConfiguration('y'), LaunchConfiguration('z')
-    yaw = LaunchConfiguration('yaw')
 
-
-    robot_spawn = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([robot_spawn_launch]),
-        launch_arguments=[
-            ('namespace', LaunchConfiguration('namespace')),
-            ('rviz', LaunchConfiguration('rviz')),
-            ('x', LaunchConfiguration('x')),
-            ('y', LaunchConfiguration('y')),
-            ('z', LaunchConfiguration('z')),
-            ('yaw', LaunchConfiguration('yaw'))]
-    )
 
     # Localization
     localization = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([localization_launch]),
         launch_arguments=[
-            ('namespace', namespace),
+            # ('namespace', namespace),
             # ('use_sim_time', use_sim_time),
             ('map', map_file),
         ]
@@ -89,14 +75,57 @@ def generate_launch_description():
     nav2 = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([nav2_launch]),
         launch_arguments=[
-            ('namespace', namespace),
+            # ('namespace', namespace),
             # ('use_sim_time', use_sim_time)
         ]
     )
 
+    rviz = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([rviz_launch]),
+        # launch_arguments=[
+            # ('namespace', namespace),
+            # ('use_sim_time', use_sim_time)],
+        # condition=IfCondition(LaunchConfiguration('rviz')),
+    )
+
+    robot_spawn = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([robot_spawn_launch]),
+        launch_arguments=[
+            # ('namespace', LaunchConfiguration('namespace')),
+            # ('rviz', LaunchConfiguration('rviz')),
+            ('x', LaunchConfiguration('x')),
+            ('y', LaunchConfiguration('y')),
+            ('z', LaunchConfiguration('z')),
+            ('yaw', LaunchConfiguration('yaw'))]
+    )
+
+
+
+
+    laser_filter = Node(
+        package="laser_filters",
+        executable="scan_to_scan_filter_chain",
+        parameters=[
+            PathJoinSubstitution([
+                pkg_dis_tutorial3,
+                "config",
+                "laser_filter_chain.yaml",
+        ])],
+        remappings=[
+            ('/scan_filtered', 'scan_filtered')
+        ]
+    )
+
+
+
     # Create launch description and add actions
     ld = LaunchDescription(ARGUMENTS)
-    ld.add_action(robot_spawn)
     ld.add_action(localization)
     ld.add_action(nav2)
+    ld.add_action(rviz)
+
+    ld.add_action(laser_filter)
+
+    # ld.add_action(robot_spawn)
+    
     return ld
