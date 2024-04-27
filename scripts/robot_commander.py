@@ -606,57 +606,61 @@ def main(args=None):
 
     add_to_navigation = [
         
-        # Spin spins the robot in place for phi in radians. It doesn't orient it to phi.
-        ("spin", 3.14),
+        # Right-down
+        ("go", (-0.6, -0.6, 2.0)),
         
-        # Starting point
+        # Going right-up:
         ("go", (0.0, 0.0, 0.57)),
-
-        # Down right
-        ("go", (-1.0, 0.25, 0.57)),
-        ("go", (-1.6, -0.7, 0.57)),
-        ("go", (-0.4, -0.6, 0.57)),
-        ("go", (-0.3, -1.85, 0.57)),
-
-        # Right
-        ("go", (1.0, -1.9, 0.57)),
-        ("go", (2.2, -2.0, 0.57)),
-
-        # Right up
-        ("go", (3.4, -1.3, 0.57)),
-        ("go", (2.0, -1.0, 0.57)),
-
-        # Centre up
-        ("go", (1.5, 0.0, 0.57)),
         ("go", (1.0, 0.0, 0.57)),
-        ("go", (2.5, 1.0, 0.57)),
+        ("go", (2.3, 0.15, 0.57)),
 
-        # Slightly left, slightly up
-        ("go", (1.5, 2.0, 0.57)),
-        ("go", (1.0,1.0, 0.57)),
-        ("go", (1.0,2.0, 0.57)),
-        ("go", (0.0, 2.0, 0.57)),
+        # Centre of map
+        ("go", (0.2, 0.6, 0.57)),
 
-        # Slightly left, slightly down
-        ("go", (-1.0, 1.0, 0.57)),
-        ("go", (-1.75, 1.0, 0.57)),
-        ("go", (-1.75, 2.0, 0.57)),
+        # Left up centre look right
+        ("go", (1.0, 1.5, 1.57)),
+        # Look down
+        ("go", (1.0, 1.5, 2.36)),
 
-        # Left down
-        ("go", (-1.5, 4.5, 0.57)),
-        ("go", (-1.0, 3.0, 0.57)),
+        # Centre up:
+        ("go", (1.4, 1.1, 1.57)),
 
-        # Left corridor
-        ("go", (0.0, 3.2, 0.57)),
-        ("go", (0.5, 2.8, 0.57)),
-        ("go", (1.0, 3.5, 0.57)),
+        # Left up look up:
+        ("go", (1.0, 2.0, 0.79)),
+        # Look left:
+        ("go", (1.0, 2.0, 0.0)),
 
-        # Left up
-        ("go", (1.5, 2.9, 0.57)),
-        ("go", (2.0,3.0, 0.57)),
+        # Left, look right at cylinder
+        ("go", (0.22, 2.0, 1.57)),
 
-        # Back to slightly left, slightly up
-        ("go", (1.5, 2.0, 0.57)),
+        # Left down, lool left
+        ("go", (-1.0, 2.0, 0.0)),
+
+        # Left down, right cranny, look down
+        ("go", (-1.25, 1.63, 2.36)),
+        # Look right
+        ("go", (-1.25, 1.63, 1.57)),
+
+
+
+        # Left down, left cranny higher up, look right at wall
+        ("go", (-0.6, 1.4, 1.57)),
+
+        # Look at cylinder from below
+        ("go", (-0.03, 1.5, 0.79)),
+
+        # Centre of map, wall below:
+        ("go", (-0.26, 0.93, 2.36)),
+
+        # Look at square block thingy from the right
+        ("go", (-0.45, 0.45, 0.0)),
+        # Look down
+        ("go", (-0.45, 0.45, 2.36)),
+
+
+        # Go back to start
+        ("go", (-0.6, -0.6, 2.0)),
+
     ]
 
     rc.add_to_nav_list(add_to_navigation, spin_full_after_go=False)
