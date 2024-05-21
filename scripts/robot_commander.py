@@ -98,8 +98,6 @@ class RobotCommander(Node):
         self.hello_dist = 0.5
         self.navigation_list = []
 
-        self.faces_greeted = 0
-
 
         self.map_np = None
         self.map_data = {"map_load_time":None,
@@ -133,7 +131,7 @@ class RobotCommander(Node):
                                                               amcl_pose_qos)
         
 
-        self.face_sub = self.create_subscription(Marker, "/detected_faces", self.face_detected_callback, QoSReliabilityPolicy.BEST_EFFORT)
+        self.face_sub = self.create_subscription(PointStamped, "/detected_faces", self.face_detected_callback, QoSReliabilityPolicy.BEST_EFFORT)
 
 
         # ROS2 publishers
@@ -185,22 +183,10 @@ class RobotCommander(Node):
         
         self.info("Face detected!")
 
-        face_location = np.array([msg.pose.position.x, msg.pose.position.y])
-
-        curr_pos = self.get_curr_pos()  
-        curr_pos_location = np.array([curr_pos.point.x, curr_pos.point.y])
-
-        vec_to_face_normed = face_location - curr_pos_location
-        vec_to_face_normed /= np.linalg.norm(vec_to_face_normed)
-
-        face_goal_location = face_location - self.hello_dist * vec_to_face_normed
-
-        fi = np.arctan2(vec_to_face_normed[1], vec_to_face_normed[0])
+        face_angle = msg.point.x
 
         add_to_navigation = [
-            ("go", (face_goal_location[0], face_goal_location[1], fi)),
             ("say_hi", 0),
-            ("spin", 3.14),
             self.last_destination_goal
         ]
 
@@ -271,36 +257,7 @@ class RobotCommander(Node):
 
             except TransformException as te:
                 self.get_logger().info(f"Cound not get the transform: {te}")
-    
 
-    def create_marker(self, point_stamped, marker_id):
-        """You can see the description of the Marker message here: https://docs.ros2.org/galactic/api/visualization_msgs/msg/Marker.html"""
-        marker = Marker()
-
-        marker.header = point_stamped.header
-
-        marker.type = marker.CUBE
-        marker.action = marker.ADD
-        marker.id = marker_id
-
-        # Set the scale of the marker
-        scale = 0.15
-        marker.scale.x = scale
-        marker.scale.y = scale
-        marker.scale.z = scale
-
-        # Set the color
-        marker.color.r = 1.0
-        marker.color.g = 0.0
-        marker.color.b = 0.0
-        marker.color.a = 1.0
-
-        # Set the pose of the marker
-        marker.pose.position.x = point_stamped.point.x
-        marker.pose.position.y = point_stamped.point.y
-        marker.pose.position.z = point_stamped.point.z
-
-        return marker
 
     def make_cv2_window(self):
         cv2.namedWindow("Just for showing what is in rc.map_np", cv2.WINDOW_NORMAL)
@@ -548,7 +505,6 @@ class RobotCommander(Node):
             elif tup[0] == "say_hi":
                 self.navigation_list.append(("say_hi", None, None))
 
-
     def prepend_to_nav_list(self, to_add_list, spin_full_after_go=False):
 
         for tup in reversed(to_add_list):
@@ -562,18 +518,8 @@ class RobotCommander(Node):
                 self.navigation_list.insert(0, ("say_hi", None, None))
 
     def say_hi(self):
-        wav_file = os.path.expanduser("~/colcon_ws/src/RINS-task-real-robot/voice/zivjo.wav")
-        
-        
-        # playsound(wav_file)
-
-        # print(os.getcwd())
-        # # audio = AudioSegment.from_file("./src/RINS-task-real-robot/voice/zivjo.mp3")
-        
-        audio = AudioSegment.from_file(file=wav_file, format="wav")
-        play(audio)
-
-        self.faces_greeted += 1
+        self.get_logger().info(f"hi")
+        playsound("src/RINS-task-1/voice/zivjo.mp3")
 
 
 def main(args=None):
@@ -605,6 +551,60 @@ def main(args=None):
     
 
     add_to_navigation = [
+
+        # Spin spins the robot in place for phi in radians. It doesn't orient it to phi.
+        ("spin", 3.14),
+        
+        # Starting point
+        ("go", (0.0, 0.0, 0.57)),
+
+        # Down right
+        ("go", (-1.0, 0.25, 0.57)),
+        ("go", (-1.6, -0.7, 0.57)),
+        ("go", (-0.4, -0.6, 0.57)),
+        ("go", (-0.3, -1.85, 0.57)),
+
+        # Right
+        ("go", (1.0, -1.9, 0.57)),
+        ("go", (2.2, -2.0, 0.57)),
+
+        # Right up
+        ("go", (3.4, -1.3, 0.57)),
+        ("go", (2.0, -1.0, 0.57)),
+
+        # Centre up
+        ("go", (1.5, 0.0, 0.57)),
+        ("go", (1.0, 0.0, 0.57)),
+        ("go", (2.5, 1.0, 0.57)),
+
+        # Slightly left, slightly up
+        ("go", (1.5, 2.0, 0.57)),
+        ("go", (1.0,1.0, 0.57)),
+        ("go", (1.0,2.0, 0.57)),
+        ("go", (0.0, 2.0, 0.57)),
+
+        # Slightly left, slightly down
+        ("go", (-1.0, 1.0, 0.57)),
+        ("go", (-1.75, 1.0, 0.57)),
+        ("go", (-1.75, 2.0, 0.57)),
+
+        # Left down
+        ("go", (-1.5, 4.5, 0.57)),
+        ("go", (-1.0, 3.0, 0.57)),
+
+        # Left corridor
+        ("go", (0.0, 3.2, 0.57)),
+        ("go", (0.5, 2.8, 0.57)),
+        ("go", (1.0, 3.5, 0.57)),
+
+        # Left up
+        ("go", (1.5, 2.9, 0.57)),
+        ("go", (2.0,3.0, 0.57)),
+
+        # Back to slightly left, slightly up
+        ("go", (1.5, 2.0, 0.57)),
+
+        ##########
         
         # Right-down
         ("go", (-0.6, -0.6, 2.0)),
@@ -702,8 +702,7 @@ def main(args=None):
 
         elif curr_type == "say_hi":
             rc.say_hi()
-            if rc.faces_greeted == 3:
-                break
+
         
 
         del rc.navigation_list[0]

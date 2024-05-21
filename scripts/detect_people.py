@@ -8,19 +8,14 @@ from rclpy.duration import Duration
 from sensor_msgs.msg import Image, PointCloud2
 from sensor_msgs_py import point_cloud2 as pc2
 
-import tf2_geometry_msgs as tfg
-from tf2_ros import TransformException
-from tf2_ros.buffer import Buffer
-from tf2_ros.transform_listener import TransformListener
-
 from geometry_msgs.msg import PointStamped
-from visualization_msgs.msg import Marker
 
 from cv_bridge import CvBridge, CvBridgeError
 import cv2
 import numpy as np
 
 import math
+import time
 
 from ultralytics import YOLO
 
@@ -38,24 +33,37 @@ class detect_faces(Node):
                 ('device', ''),
         ])
 
-        self.marker_topic = "/detected_faces"
+        # camera info (simulation)
+        self.f_x = 277
+        self.f_y = 277
+        self.c_x = 160
+        self.c_y = 120
+        self.hfov = 2 * math.atan(self.c_x / self.f_x)
+        self.vfov = 2 * math.atan(self.c_y / self.f_y)
+
+        # camera info (real robot)
+        """ self.f_x = 119.53
+        self.f_y = 73.70
+        self.c_x = 119.53
+        self.c_y = 77.30
+        self.hfov = 2 * math.atan(self.c_x / self.f_x)
+        self.vfov = 2 * math.atan(self.c_y / self.f_y) """
+
+        self.get_logger().info(f"hfov: {self.hfov}, vfov: {self.vfov}")
+
+        self.angle_topic = "/detected_faces"
 
         self.detection_color = (0,0,255)
         self.device = self.get_parameter('device').get_parameter_value().string_value
 
         self.bridge = CvBridge()
         self.scan = None
-
-        # For listening and loading the 
-        self.tf_buffer = Buffer()
-        self.tf_listener = TransformListener(self.tf_buffer, self)
         
         # For publishing the markers
-        self.marker_pub = self.create_publisher(Marker, self.marker_topic, QoSReliabilityPolicy.BEST_EFFORT)
+        self.angle_pub = self.create_publisher(PointStamped, self.angle_topic, QoSReliabilityPolicy.BEST_EFFORT)
 
         # For face detection
         self.rgb_image_sub = self.create_subscription(Image, "/oakd/rgb/preview/image_raw", self.rgb_callback, qos_profile_sensor_data)
-        self.pointcloud_sub = self.create_subscription(PointCloud2, "/oakd/rgb/preview/depth/points", self.pointcloud_callback, qos_profile_sensor_data)
         self.model = YOLO("yolov8n.pt")
 
         # all detected faces by YOLO
@@ -65,11 +73,18 @@ class detect_faces(Node):
         self.face_buffer = []
 
         # for unique faces
-        self.marker_id = 0
+        self.point_id = 0
         self.min_distance_between_faces = 1.
         self.detected_faces = []
 
-        self.get_logger().info(f"Node has been initialized! Will publish face markers to {self.marker_topic}.")
+        self.get_logger().info(f"Node has been initialized! Will publish face markers to {self.angle_topic}.")
+
+    def get_angle(self, x, y):
+
+        angle_x = ((x - self.c_x ) / self.c_x) / (self.hfov / 2)
+        angle_y = ((y - self.c_y ) / self.c_y) / (self.vfov / 2)
+
+        return angle_x, angle_y
 
     def rgb_callback(self, data):
 
@@ -85,11 +100,12 @@ class detect_faces(Node):
 
             # iterate over results
             for x in res:
+
                 bbox = x.boxes.xyxy
                 if bbox.nelement() == 0: # skip if empty
                     continue
 
-                #self.get_logger().info(f"Person has been detected!")
+                #self.get_logger().info(f"Person has been detected {bbox}!")
 
                 bbox = bbox[0]
 
@@ -103,6 +119,23 @@ class detect_faces(Node):
                 cv_image = cv2.circle(cv_image, (cx,cy), 5, self.detection_color, -1)
 
                 self.faces.append((cx,cy))
+
+                angle_x, angle_y = self.get_angle(cx, cy)
+
+                if angle_x > 1 or angle_x < -1:
+                    continue
+
+                # To do on the real robot for filtering out real people
+                # if angle_y > threshold:
+                #   continue
+
+                self.get_logger().info(f"x: {angle_x}, y: {angle_y}")
+
+                self.publish_face(angle_x, angle_y)
+                
+                self.get_logger().info(f"Sleeping...")
+                time.sleep(10)
+                self.get_logger().info(f"Woke up")
 
             cv2.imshow("image", cv_image)
             key = cv2.waitKey(1)
@@ -152,115 +185,20 @@ class detect_faces(Node):
             return False
         return True
     
-    def publish_face(self, point_in_robot_frame):
+    def publish_face(self, angle_x, angle_y):
 
-        # Now we look up the transform between the base_link and the map frames
-        # and then we apply it to our PointStamped
-        time_now = rclpy.time.Time()
-        timeout = Duration(seconds=0.1)
-        try:
-            # An example of how you can get a transform from /base_link frame to the /map frame
-            # as it is at time_now, wait for timeout for it to become available
-            trans = self.tf_buffer.lookup_transform("map", "base_link", time_now, timeout)
-            #self.get_logger().info(f"Looks like the transform is available.")
+        # if it's new, append it to detected faces
+        self.detected_faces.append((angle_x, angle_y))
 
-            # Now we apply the transform to transform the point_in_robot_frame to the map frame
-            # The header in the result will be copied from the Header of the transform
-            point_in_map_frame = tfg.do_transform_point(point_in_robot_frame, trans)
-            #self.get_logger().info(f"We transformed a PointStamped!")
 
-            # If the transformation exists, create a marker from the point, in order to visualize it in Rviz
-            marker_in_map_frame = self.create_marker(point_in_map_frame, self.marker_id)
+        point = PointStamped()
+        point.point.x = angle_x
+        point.point.y = angle_y
 
-            if not math.isnan(marker_in_map_frame.pose.position.x) and not math.isnan(marker_in_map_frame.pose.position.y) and self.new(marker_in_map_frame):
-
-                # check if face already detected
-                if self.notFalsePositive(marker_in_map_frame):
-
-                    # if it's new, append it to detected faces
-                    self.detected_faces.append(marker_in_map_frame)
-
-                    # Publish the marker
-                    self.marker_pub.publish(marker_in_map_frame)
-                    self.get_logger().info(f"The marker has been published to {self.marker_topic}. You are able to visualize it in Rviz")
-                    #self.get_logger().info(f"x: {marker_in_map_frame.pose.position.x}, y: {marker_in_map_frame.pose.position.y}, z: {marker_in_map_frame.pose.position.z}")
-                    
-                    for face in self.detected_faces:
-                        self.get_logger().info(f"x: {face.pose.position.x}, y: {face.pose.position.y}, z: {face.pose.position.z}")
-
-                    # Increase the marker_id, so we dont overwrite the same marker.
-                    self.marker_id += 1
-
-                #else:
-                    #self.get_logger().info(f"Face has already been detected")
-
-        except TransformException as te:
-            self.get_logger().info(f"Could not get the transform: {te}")
-
-    def create_marker(self, point_stamped, marker_id):
-        """You can see the description of the Marker message here: https://docs.ros2.org/galactic/api/visualization_msgs/msg/Marker.html"""
-
-        # create marker from PointStamped
-
-        marker = Marker()
-
-        marker.header = point_stamped.header
-
-        marker.type = marker.CUBE
-        marker.action = marker.ADD
-        marker.id = marker_id
-
-        # Set the scale of the marker
-        scale = 0.15
-        marker.scale.x = scale
-        marker.scale.y = scale
-        marker.scale.z = scale
-
-        # Set the color
-        marker.color.r = 1.0
-        marker.color.g = 0.0
-        marker.color.b = 0.0
-        marker.color.a = 1.0
-
-        # Set the pose of the marker
-        marker.pose.position.x = point_stamped.point.x
-        marker.pose.position.y = point_stamped.point.y
-        marker.pose.position.z = point_stamped.point.z
-
-        return marker
+        # Publish the marker
+        self.angle_pub.publish(point)
+        #self.get_logger().info(f"The point ({angle_x}, {angle_y}) has been published to {self.angle_topic}. You are able to visualize it in Rviz")
     
-
-    def pointcloud_callback(self, data):
-
-        # get point cloud attributes
-        height = data.height
-        width = data.width
-        point_step = data.point_step
-        row_step = data.row_step		
-
-        # iterate over face coordinates
-        for x,y in self.faces:
-
-            # get 3-channel representation of the poitn cloud in numpy format
-            a = pc2.read_points_numpy(data, field_names= ("x", "y", "z"))
-            a = a.reshape((height,width,3))
-
-            # read center coordinates
-            d = a[y,x,:]
-
-
-            # Create a PointStamped in the /base_link frame of the robot
-            # "Stamped" means that the message type contains a Header
-            point_in_robot_frame = PointStamped()
-            point_in_robot_frame.header.frame_id = "/base_link"
-            point_in_robot_frame.header.stamp = data.header.stamp
-
-            point_in_robot_frame.point.x = float(d[0])
-            point_in_robot_frame.point.y = float(d[1])
-            point_in_robot_frame.point.z = float(d[2])
-
-            self.publish_face(point_in_robot_frame)
-
             
 def main():
     print('Face detection node starting.')
