@@ -110,6 +110,8 @@ class RobotCommander(Node):
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
+        self.detect = True
+
 
         # # rc.point_hash(point) to point_in_map_frame. This way we don't duplicate points.
         # self.detected_faces = {}
@@ -180,20 +182,25 @@ class RobotCommander(Node):
     
 
     def face_detected_callback(self, msg):
-        
-        self.info("Face detected!")
 
-        face_angle = msg.point.x
+        if self.detect == True:
 
-        add_to_navigation = [
-            ("say_hi", 0),
-            self.last_destination_goal
-        ]
+            self.detect = False
 
-        #self.prepend_to_nav_list(add_to_navigation, spin_full_after_go=False)
+            self.info("Face detected!")
 
-        #self.cancel_goal = True
-        # self.cancelTask()
+            face_angle = msg.point.x
+
+            add_to_navigation = [
+                ("say_hi", 0),
+                self.last_destination_goal,
+                ("detect", 0)
+            ]
+
+            self.prepend_to_nav_list(add_to_navigation, spin_full_after_go=False)
+
+            self.cancel_goal = True
+            # self.cancelTask()
 
 
 
@@ -504,6 +511,8 @@ class RobotCommander(Node):
                 self.navigation_list.append(("spin", tup[1], None))
             elif tup[0] == "say_hi":
                 self.navigation_list.append(("say_hi", None, None))
+            elif tup[0] == "detect":
+                self.navigation_list.append(("detect", None, None))
 
     def prepend_to_nav_list(self, to_add_list, spin_full_after_go=False):
 
@@ -516,10 +525,16 @@ class RobotCommander(Node):
                 self.navigation_list.insert(0, ("spin", tup[1], None))
             elif tup[0] == "say_hi":
                 self.navigation_list.insert(0, ("say_hi", None, None))
+            elif tup[0] == "detect":
+                self.navigation_list.insert(0, ("detect", None, None))
 
     def say_hi(self):
         self.get_logger().info(f"hi")
         playsound("src/RINS-task-1/voice/zivjo.mp3")
+
+    def detectStart(self):
+        self.get_logger().info(f"detect")
+        self.detect = True
 
 
 def main(args=None):
@@ -560,11 +575,11 @@ def main(args=None):
 
         ("go", (0.15, 0.5, UP)),
 
+        ("go", (0.9, 0.0, UP)),
+
         ("go", (1.9, 0.1, DOWN)),
 
-        ("go", (0.8, 0.0, DOWN)),
-
-        ("go", (1.2, 1.3, LEFT)),
+        ("go", (1.2, 1.3, RIGHT)),
 
         ("go", (1.0, 2.0, DOWN)),
 
@@ -613,6 +628,9 @@ def main(args=None):
 
         elif curr_type == "say_hi":
             rc.say_hi()
+
+        elif curr_type == "detect":
+            rc.detectStart()
 
         
 

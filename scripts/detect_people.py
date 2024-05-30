@@ -77,7 +77,7 @@ class detect_faces(Node):
         self.min_distance_between_faces = 1.
         self.detected_faces = []
 
-        self.timeout = 5
+        self.timeout = 10
 
         self.get_logger().info(f"Node has been initialized! Will publish face markers to {self.angle_topic}.")
 
@@ -135,8 +135,8 @@ class detect_faces(Node):
 
                 self.publish_face(angle_x, angle_y)
                 
-                self.get_logger().info(f"Sleeping...")
-                self.get_logger().info(f"Woke up")
+                #self.get_logger().info(f"Sleeping...")
+                #self.get_logger().info(f"Woke up")
 
             cv2.imshow("image", cv_image)
             key = cv2.waitKey(1)
