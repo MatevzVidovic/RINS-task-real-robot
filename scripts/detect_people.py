@@ -34,20 +34,20 @@ class detect_faces(Node):
         ])
 
         # camera info (simulation)
-        self.f_x = 277
+        """ self.f_x = 277
         self.f_y = 277
         self.c_x = 160
         self.c_y = 120
         self.hfov = 2 * math.atan(self.c_x / self.f_x)
-        self.vfov = 2 * math.atan(self.c_y / self.f_y)
+        self.vfov = 2 * math.atan(self.c_y / self.f_y) """
 
         # camera info (real robot)
-        """ self.f_x = 119.53
-        self.f_y = 73.70
-        self.c_x = 119.53
-        self.c_y = 77.30
+        self.f_x = 201.04
+        self.f_y = 201.04
+        self.c_x = 124.62
+        self.c_y = 125.16
         self.hfov = 2 * math.atan(self.c_x / self.f_x)
-        self.vfov = 2 * math.atan(self.c_y / self.f_y) """
+        self.vfov = 2 * math.atan(self.c_y / self.f_y)
 
         self.get_logger().info(f"hfov: {self.hfov}, vfov: {self.vfov}")
 
@@ -77,12 +77,14 @@ class detect_faces(Node):
         self.min_distance_between_faces = 1.
         self.detected_faces = []
 
+        self.timeout = 5
+
         self.get_logger().info(f"Node has been initialized! Will publish face markers to {self.angle_topic}.")
 
     def get_angle(self, x, y):
 
-        angle_x = ((x - self.c_x ) / self.c_x) / (self.hfov / 2)
-        angle_y = ((y - self.c_y ) / self.c_y) / (self.vfov / 2)
+        angle_x = ((x - self.c_x ) / self.c_x) / (self.hfov)
+        angle_y = ((y - self.c_y ) / self.c_y) / (self.vfov)
 
         return angle_x, angle_y
 
@@ -109,32 +111,31 @@ class detect_faces(Node):
 
                 bbox = bbox[0]
 
-                # draw rectangle
-                cv_image = cv2.rectangle(cv_image, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), self.detection_color, 3)
-
                 cx = int((bbox[0]+bbox[2])/2)
                 cy = int((bbox[1]+bbox[3])/2)
-
-                # draw the center of bounding box
-                cv_image = cv2.circle(cv_image, (cx,cy), 5, self.detection_color, -1)
 
                 self.faces.append((cx,cy))
 
                 angle_x, angle_y = self.get_angle(cx, cy)
 
-                if angle_x > 1 or angle_x < -1:
+                if angle_x > 0.55 or angle_x < -0.55:
                     continue
 
                 # To do on the real robot for filtering out real people
-                # if angle_y > threshold:
-                #   continue
+                if angle_y < 0:
+                   continue
+
+                # draw rectangle
+                cv_image = cv2.rectangle(cv_image, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), self.detection_color, 3)
+
+                # draw the center of bounding box
+                cv_image = cv2.circle(cv_image, (cx,cy), 5, self.detection_color, -1)
 
                 self.get_logger().info(f"x: {angle_x}, y: {angle_y}")
 
                 self.publish_face(angle_x, angle_y)
                 
                 self.get_logger().info(f"Sleeping...")
-                time.sleep(10)
                 self.get_logger().info(f"Woke up")
 
             cv2.imshow("image", cv_image)

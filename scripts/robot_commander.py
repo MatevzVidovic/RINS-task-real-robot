@@ -190,9 +190,9 @@ class RobotCommander(Node):
             self.last_destination_goal
         ]
 
-        self.prepend_to_nav_list(add_to_navigation, spin_full_after_go=False)
+        #self.prepend_to_nav_list(add_to_navigation, spin_full_after_go=False)
 
-        self.cancel_goal = True
+        #self.cancel_goal = True
         # self.cancelTask()
 
 
@@ -499,7 +499,7 @@ class RobotCommander(Node):
             if tup[0] == "go":
                 self.navigation_list.append(("go", self.get_pose_obj(*tup[1]), tup[1]))
                 if spin_full_after_go:
-                    self.navigation_list.append(("spin", 3.14, None))
+                    self.navigation_list.append(("spin", 6.28, None))
             elif tup[0] == "spin":
                 self.navigation_list.append(("spin", tup[1], None))
             elif tup[0] == "say_hi":
@@ -511,7 +511,7 @@ class RobotCommander(Node):
             if tup[0] == "go":
                 self.navigation_list.insert(0, ("go", self.get_pose_obj(*tup[1]), tup[1]))
                 if spin_full_after_go:
-                    self.navigation_list.insert(0, ("spin", 3.14, None))
+                    self.navigation_list.insert(0, ("spin", 6.28, None))
             elif tup[0] == "spin":
                 self.navigation_list.insert(0, ("spin", tup[1], None))
             elif tup[0] == "say_hi":
@@ -548,122 +548,33 @@ def main(args=None):
 
     # contains tuples of three types:
     # ("go", <PoseStamped object>), ("spin", angle_to_spin_by), ("say_hi", None)
-    
+
+    UP = 0.0
+    LEFT = 1.57
+    DOWN = 3.14
+    RIGHT = 4.71
 
     add_to_navigation = [
-
-        # Spin spins the robot in place for phi in radians. It doesn't orient it to phi.
-        ("spin", 3.14),
         
-        # Starting point
-        ("go", (0.0, 0.0, 0.57)),
+        ("go", (-0.5, -0.4, UP)),
 
-        # Down right
-        ("go", (-1.0, 0.25, 0.57)),
-        ("go", (-1.6, -0.7, 0.57)),
-        ("go", (-0.4, -0.6, 0.57)),
-        ("go", (-0.3, -1.85, 0.57)),
+        ("go", (0.15, 0.5, UP)),
 
-        # Right
-        ("go", (1.0, -1.9, 0.57)),
-        ("go", (2.2, -2.0, 0.57)),
+        ("go", (1.9, 0.1, DOWN)),
 
-        # Right up
-        ("go", (3.4, -1.3, 0.57)),
-        ("go", (2.0, -1.0, 0.57)),
+        ("go", (0.8, 0.0, DOWN)),
 
-        # Centre up
-        ("go", (1.5, 0.0, 0.57)),
-        ("go", (1.0, 0.0, 0.57)),
-        ("go", (2.5, 1.0, 0.57)),
+        ("go", (1.2, 1.3, LEFT)),
 
-        # Slightly left, slightly up
-        ("go", (1.5, 2.0, 0.57)),
-        ("go", (1.0,1.0, 0.57)),
-        ("go", (1.0,2.0, 0.57)),
-        ("go", (0.0, 2.0, 0.57)),
+        ("go", (1.0, 2.0, DOWN)),
 
-        # Slightly left, slightly down
-        ("go", (-1.0, 1.0, 0.57)),
-        ("go", (-1.75, 1.0, 0.57)),
-        ("go", (-1.75, 2.0, 0.57)),
+        ("go", (-0.8, 1.8, DOWN)),
 
-        # Left down
-        ("go", (-1.5, 4.5, 0.57)),
-        ("go", (-1.0, 3.0, 0.57)),
-
-        # Left corridor
-        ("go", (0.0, 3.2, 0.57)),
-        ("go", (0.5, 2.8, 0.57)),
-        ("go", (1.0, 3.5, 0.57)),
-
-        # Left up
-        ("go", (1.5, 2.9, 0.57)),
-        ("go", (2.0,3.0, 0.57)),
-
-        # Back to slightly left, slightly up
-        ("go", (1.5, 2.0, 0.57)),
-
-        ##########
-        
-        # Right-down
-        ("go", (-0.6, -0.6, 2.0)),
-        
-        # Going right-up:
-        ("go", (0.0, 0.0, 0.57)),
-        ("go", (1.0, 0.0, 0.57)),
-        ("go", (2.3, 0.15, 0.57)),
-
-        # Centre of map
-        ("go", (0.2, 0.6, 0.57)),
-
-        # Left up centre look right
-        ("go", (1.0, 1.5, 1.57)),
-        # Look down
-        ("go", (1.0, 1.5, 2.36)),
-
-        # Centre up:
-        ("go", (1.4, 1.1, 1.57)),
-
-        # Left up look up:
-        ("go", (1.0, 2.0, 0.79)),
-        # Look left:
-        ("go", (1.0, 2.0, 0.0)),
-
-        # Left, look right at cylinder
-        ("go", (0.22, 2.0, 1.57)),
-
-        # Left down, lool left
-        ("go", (-1.0, 2.0, 0.0)),
-
-        # Left down, right cranny, look down
-        ("go", (-1.25, 1.63, 2.36)),
-        # Look right
-        ("go", (-1.25, 1.63, 1.57)),
-
-
-
-        # Left down, left cranny higher up, look right at wall
-        ("go", (-0.6, 1.4, 1.57)),
-
-        # Look at cylinder from below
-        ("go", (-0.03, 1.5, 0.79)),
-
-        # Centre of map, wall below:
-        ("go", (-0.26, 0.93, 2.36)),
-
-        # Look at square block thingy from the right
-        ("go", (-0.45, 0.45, 0.0)),
-        # Look down
-        ("go", (-0.45, 0.45, 2.36)),
-
-
-        # Go back to start
-        ("go", (-0.6, -0.6, 2.0)),
+        ("go", (-0.5, -0.4, UP))
 
     ]
 
-    rc.add_to_nav_list(add_to_navigation, spin_full_after_go=False)
+    rc.add_to_nav_list(add_to_navigation, spin_full_after_go=True)
 
 
 
